@@ -118,6 +118,7 @@ local function add_selection_box_offset(proto, pos, r)
 
   local offset_left_top = selection_box.left_top
   local offset_right_bottom = selection_box.right_bottom
+  s
 
   if debug_mode then
     game.print(proto.name .. ":left_top = {" .. offset_left_top.x .. ", " .. offset_left_top.y .. "} Pos = {" .. pos.x .. ", " .. pos.y .. "}"
