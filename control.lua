@@ -109,8 +109,12 @@ end)
 
 
 local function get_tower_planting_radius(proto)
-  game.print(proto.name .. ": selection_box_offset:  grid_radius: " .. proto.radius )
-  return (proto.radius or 2 ) * (proto.growth_grid_tile_size or 3)
+  if debug_mode then
+    game.print(proto.name .. ": growth_grid_tile_size: " .. (proto.growth_grid_tile_size or 3) .. 
+                             " agricultural_tower_radius: " .. (proto.agricultural_tower_radius or 2))
+  end
+  
+  return (proto.agricultural_tower_radius or 2 ) * (proto.growth_grid_tile_size or 3)
 end
 
 local function add_selection_box_offset(proto, pos, r)
