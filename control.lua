@@ -73,11 +73,7 @@ script.on_event(defines.events.on_player_cursor_stack_changed, function(event)
       storage.playerdata[player.index] = {
         player_index = player.index,
         surface_index = player.surface.index,
-
-        rectangles = {},
         seen_chunks = {},
-
-        tile_render_objects = {},
         rendered_towers = {},
       }
 
@@ -85,14 +81,9 @@ script.on_event(defines.events.on_player_cursor_stack_changed, function(event)
     end
   else
     if is_player_holding_agricultural_tower(player) ~= true then
-        for _, rectangle in pairs(playerdata.rectangles) do
-            rectangle.destroy()
+        for _, rectangle_tower in pairs(playerdata.rendered_towers) do
+            rectangle_tower.destroy()
         end
-
-        for _, tile_render_object in pairs(playerdata.tile_render_objects) do
-            tile_render_object.destroy()
-        end
-
         storage.playerdata[player.index] = nil
     end
   end
@@ -134,7 +125,10 @@ local function render_tower(tower, surface, playerdata)
   local id = playerdata.rendered_towers[tower.unit_number]
   
   if not id then
-    local proto = tower.prototype    
+    local proto = tower.prototype
+    if tower.type == "entity-ghost" then
+        proto = prototypes.entity[tower.ghost_name]
+    end
     local pos = tower.position
 
     local r = get_tower_planting_radius(proto)
@@ -151,10 +145,31 @@ local function render_tower(tower, surface, playerdata)
       }
       
       playerdata.rendered_towers[tower.unit_number] = id
-      table.insert(playerdata.rectangles, id)
+
   end
 
 end
+
+local function destroy_tower_render(unit_number, playerdata)
+  if not playerdata then return end
+  local render_id = playerdata.rendered_towers[unit_number]
+  if not render_id then return end
+  render_id.destroy()
+  playerdata.rendered_towers[unit_number] = nil
+end
+
+function Handler.on_tower_removed(event)
+  local entity = event.entity
+  if not entity then return end
+
+  if entity.type == "agricultural-tower" or (entity.type == "entity-ghost" and is_agricultural_tower_entity[entity.ghost_name]) then
+    for _, playerdata in pairs(storage.playerdata) do
+      destroy_tower_render(entity.unit_number, playerdata)
+    end
+  end
+end
+
+
 
 -- render green rectengles as per the game
 function Handler.tick_player(event)
@@ -179,22 +194,71 @@ function Handler.tick_player(event)
             type = "agricultural-tower"
         }
 
-        -- add all found towers into a lookup
+        local found_tower_ghosts = surface.find_entities_filtered{
+            area = {left_top, right_bottom},
+            type = "entity-ghost"
+        }
+
+        --add all towers and tower ghosts to the list of towers to render
         for _, tower_entity in pairs(found_towers_in_chunk) do
             table.insert(all_visual_towers, tower_entity)
         end
+
+        for _, ghost_entity in pairs(found_tower_ghosts) do
+            if is_agricultural_tower_entity[ghost_entity.ghost_name] then
+                table.insert(all_visual_towers, ghost_entity)
+            end
+        end
         
     end
+
+        -- First, collect current unit numbers
+    local current_unit_numbers = {}
+    for _, tower in pairs(all_visual_towers) do
+        current_unit_numbers[tower.unit_number] = true
+    end
+    -- Remove renders for towers no longer present
+    for unit_number, render_id in pairs(playerdata.rendered_towers) do
+        if not current_unit_numbers[unit_number] then
+            render_id.destroy()
+            playerdata.rendered_towers[unit_number] = nil
+        end
+    end
+
     -- Render all towers in the visible chunks
     for _, tower in pairs(all_visual_towers) do
         render_tower(tower, surface, playerdata)
     end
 end
 
+function Handler.on_tower_built(event)
+  local entity = event.entity or event.created_entity
+  if not entity then return end
 
---TODO Render Overlaping areas red
-    --destroy render when tower is deconstrocted 
-    --Entity-Ghost not working in creating a render
+  if entity.type == "agricultural-tower"
+      or (entity.type == "entity-ghost" and is_agricultural_tower_entity[entity.ghost_name]) then
+    for _, playerdata in pairs(storage.playerdata) do
+      render_tower(entity, entity.surface, playerdata)
+    end
+  end
+end
+
+--TODO 
+    --Render Overlaping areas red
 
 
-script.on_event(defines.events.on_player_changed_position, Handler.tick_player)
+script.on_event({
+  defines.events.on_player_changed_position,
+  defines.events.on_player_changed_surface
+}, Handler.tick_player)
+
+script.on_event({
+  defines.events.on_pre_player_mined_item,
+  defines.events.on_robot_pre_mined,
+  defines.events.on_entity_died
+}, Handler.on_tower_removed)
+
+script.on_event({
+  defines.events.on_built_entity,
+  defines.events.on_robot_built_entity
+}, Handler.on_tower_built)
