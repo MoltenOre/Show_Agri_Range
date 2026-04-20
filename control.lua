@@ -1,5 +1,4 @@
 local flib_position = require("__flib__.position")
-local flib_bounding_box = require("__flib__.bounding-box")
 
 local debug_mode = false
 
@@ -13,13 +12,6 @@ end)
 local is_agricultural_tower_entity = {}
 for _, entity in pairs(prototypes.entity) do
   is_agricultural_tower_entity[entity.name] = entity.type == "agricultural-tower"
-end
-
--- Get the Position of the Tower!
-local function position_key(position)
-  assert(position.x)
-  assert(position.y)
-  return string.format("[%g, %g]", position.x, position.y)
 end
 
 -- Every chunk the player can see!
@@ -164,10 +156,6 @@ local function render_tower(tower, surface, playerdata)
 
 end
 
-
-
-
-
 -- render green rectengles as per the game
 function Handler.tick_player(event)
     local playerdata = storage.playerdata[event.player_index]
@@ -195,11 +183,9 @@ function Handler.tick_player(event)
         for _, tower_entity in pairs(found_towers_in_chunk) do
             table.insert(all_visual_towers, tower_entity)
         end
-
         
-        ::continue::
     end
-        -- render all 
+    -- Render all towers in the visible chunks
     for _, tower in pairs(all_visual_towers) do
         render_tower(tower, surface, playerdata)
     end
@@ -208,7 +194,7 @@ end
 
 --TODO Render Overlaping areas red
     --destroy render when tower is deconstrocted 
-    --Entity-Ghost not working creating a render
+    --Entity-Ghost not working in creating a render
 
 
 script.on_event(defines.events.on_player_changed_position, Handler.tick_player)
