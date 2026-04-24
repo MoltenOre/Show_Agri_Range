@@ -1,0 +1,19 @@
+Version 1.1.0
+Added:
+- Ghost Tower show range
+- Tower Range disappears when tower is deconstructed
+- Range is rendered when new tower is placed
+Bug:
+- Fixed crash when holding item tower and changing surface
+TODO:
+- Show overlapping areas
+- show plantable ground/Artificial soil
+- Make towers draggable like power poles
+
+Version 1.0.0
+First release
+TODO:
+- Overlapping area indicator
+- render square when new tower is placed without having to move/update first
+- Entity-Ghost not working in creating a render
+- destroy render when tower is deconstructed 
