@@ -4,6 +4,8 @@ Date: 2024-04-24
   Changes:
   Features:
     - Show overlapping areas in red
+  Bug:
+    - KNOWN BUG: when marking a tower for deconstruct while moving the mouse the render will not get destroyed because the unit_number gets removed before
   TODO:
     - show plantable ground/Artificial soil
     - Make towers draggable like power poles
