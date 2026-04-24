@@ -1,7 +1,8 @@
 ---------------------------------------------------------------------------------------------------
-Version: 0.0.0
-  Version 1.1.0:
-  Added:
+Version: 1.1.0
+Date: 2024-04-21
+  Changes:
+  Features:
     - Ghost Tower show range
     - Tower Range disappears when tower is deconstructed
     - Range is rendered when new tower is placed
@@ -11,9 +12,11 @@ Version: 0.0.0
     - Show overlapping areas
     - show plantable ground/Artificial soil
     - Make towers draggable like power poles
-
-  Version 1.0.0:
-  First release:
+---------------------------------------------------------------------------------------------------
+Version: 1.0.0
+Date: 2026-04-20
+  Changes:
+    - Initial release
   TODO:
     - Overlapping area indicator
     - render square when new tower is placed without having to move/update first
