@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.2.0
+Date: 2024-04-24
+  Changes:
+  Features:
+    - Show overlapping areas in red
+  TODO:
+    - show plantable ground/Artificial soil
+    - Make towers draggable like power poles
+---------------------------------------------------------------------------------------------------
 Version: 1.1.0
 Date: 2024-04-21
   Changes:
