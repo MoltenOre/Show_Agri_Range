@@ -1,34 +1,45 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.2.1
+Date: 2024-04-26
+  Features:
+    - Added a setting to enable and disable overlapping areas defaults to false
+  Bugfixes:
+    - Fixed overlaping arreays of multiople towers getting drawn over each other 
+    - Fixed tragic spelling and grammar mistakes
+    - KNOWN BUG: when marking a tower for deconstruct while moving the mouse the render will not get destroyed because the unit_number gets removed before
+  Info:
+    - TODO show plantable ground/Artificial soil
+---------------------------------------------------------------------------------------------------
 Version: 1.2.0
 Date: 2024-04-24
-  Changes:
+  Optimizations:
+    - Minore runtime optimasation
   Features:
     - Show overlapping areas in red
-  Bug:
+  Bugfixes:
     - KNOWN BUG: when marking a tower for deconstruct while moving the mouse the render will not get destroyed because the unit_number gets removed before
-  TODO:
-    - show plantable ground/Artificial soil
-    - Make towers draggable like power poles
+  Info:
+    - TODO show plantable ground/Artificial soil
+    - OUT OF SCOPE TODO Make towers draggable like power poles
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.0
 Date: 2024-04-21
-  Changes:
   Features:
     - Ghost Tower show range
     - Tower Range disappears when tower is deconstructed
     - Range is rendered when new tower is placed
-  Bug:
+  Bugfixes:
     - Fixed crash when holding item tower and changing surface
-  TODO:
+  Info:
     - Show overlapping areas
     - show plantable ground/Artificial soil
-    - Make towers draggable like power poles
+    - OUT OF SCOPE TODO Make towers draggable like power poles
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.0
 Date: 2026-04-20
   Changes:
     - Initial release
-  TODO:
+  Info:
     - Overlapping area indicator
     - render square when new tower is placed without having to move/update first
     - Entity-Ghost not working in creating a render

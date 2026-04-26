@@ -1,14 +1,11 @@
 local flib_position = require("__flib__.position")
-
-local debug_mode = false
-
 local Handler = {}
 
 script.on_init(function()
   storage.playerdata = {}
 end)
 
---Looks for all agri Towers
+-- Looks for all agri Towers in the game pressent
 local is_agricultural_tower_entity = {}
 for _, entity in pairs(prototypes.entity) do
   is_agricultural_tower_entity[entity.name] = entity.type == "agricultural-tower"
@@ -17,6 +14,15 @@ end
 -- Is this entity an agricultural tower?
 function is_agricultural_tower_type(entity)
   return entity.type == "agricultural-tower" or (entity.type == "entity-ghost" and is_agricultural_tower_entity[entity.ghost_name])
+end
+
+-- returns the prototype of an entity, even if it's a ghost
+function get_proto(entity)
+  if entity.type == "entity-ghost" then
+    return prototypes.entity[entity.ghost_name]
+  else
+    return entity.prototype
+  end
 end
 
 -- Every chunk the player can see!
@@ -68,6 +74,8 @@ end
 
 -- clean up and generation of Rendering scuffolding
 -- construct playerdata
+-- look for change in held item, if its an agricultural tower add playerdata and start rendering,
+-- if its not remove playerdata and destroy all renders
 script.on_event(defines.events.on_player_cursor_stack_changed, function(event)
   local player = game.get_player(event.player_index)
   assert(player)
@@ -91,8 +99,10 @@ script.on_event(defines.events.on_player_cursor_stack_changed, function(event)
         for _, tower_entry in pairs(playerdata.rendered_towers) do
             tower_entry.destroy()
         end
-        for _, overlap_render in pairs(playerdata.overlap_renders) do
-            overlap_render.destroy()
+        for _, overlap_renders in pairs(playerdata.overlap_renders) do
+            for _, render in ipairs(overlap_renders) do
+                render.destroy()
+            end
         end
         storage.playerdata[player.index] = nil
     end
@@ -107,10 +117,7 @@ end
 -- Get the ToplFeft and BottomRight of the Tower rectangle based on
 -- the tower prototype, position, and planting radius as well as the selection box
 local function get_tower_planting_area(tower)
-  local proto = tower.prototype
-  if tower.type == "entity-ghost" then
-    proto = prototypes.entity[tower.ghost_name]
-  end
+  local proto = get_proto(tower)
   local pos = tower.position
   local selection_box = proto.selection_box
   local offset_left_top = selection_box.left_top
@@ -149,12 +156,77 @@ local function get_intersection_area(area_1, area_2)
   return {left_top = intersection_lt, right_bottom = intersection_rb}
 end
 
+-- create a lookup for all overlaping areas, so they dont get reredndered multiple times when 
+-- multiple towers overlap in the same area
 local function make_pair_key(a, b)
   if a < b then
     return tostring(a) .. "_" .. tostring(b)
   else
     return tostring(b) .. "_" .. tostring(a)
   end
+end
+
+local function has_positive_size(rect)
+  return rect.right_bottom.x > rect.left_top.x and rect.right_bottom.y > rect.left_top.y
+end
+
+local function subtract_rectangle(target, subtract)
+  local result = {}
+  local t_lt = target.left_top
+  local t_rb = target.right_bottom
+  local s_lt = subtract.left_top
+  local s_rb = subtract.right_bottom
+
+  -- Left part
+  if t_lt.x < s_lt.x then
+    local part = {left_top = {x = t_lt.x, y = t_lt.y}, right_bottom = {x = s_lt.x, y = t_rb.y}}
+    if has_positive_size(part) then
+      table.insert(result, part)
+    end
+  end
+
+  -- Right part
+  if t_rb.x > s_rb.x then
+    local part = {left_top = {x = s_rb.x, y = t_lt.y}, right_bottom = {x = t_rb.x, y = t_rb.y}}
+    if has_positive_size(part) then
+      table.insert(result, part)
+    end
+  end
+
+  -- Top part
+  local left = math.max(t_lt.x, s_lt.x)
+  local right = math.min(t_rb.x, s_rb.x)
+  if left < right and t_lt.y < s_lt.y then
+    local part = {left_top = {x = left, y = t_lt.y}, right_bottom = {x = right, y = s_lt.y}}
+    if has_positive_size(part) then
+      table.insert(result, part)
+    end
+  end
+
+  -- Bottom part
+  if left < right and t_rb.y > s_rb.y then
+    local part = {left_top = {x = left, y = s_rb.y}, right_bottom = {x = right, y = t_rb.y}}
+    if has_positive_size(part) then
+      table.insert(result, part)
+    end
+  end
+
+  return result
+end
+
+local function subtract_rectangles(target, subtract_list)
+  local current = {target}
+  for _, sub in ipairs(subtract_list) do
+    local new_current = {}
+    for _, rect in ipairs(current) do
+      local parts = subtract_rectangle(rect, sub)
+      for _, part in ipairs(parts) do
+        table.insert(new_current, part)
+      end
+    end
+    current = new_current
+  end
+  return current
 end
 
 -- render each tower overlay
@@ -175,6 +247,10 @@ local function render_tower(tower, surface, playerdata)
 
   playerdata.rendered_towers[tower.unit_number] = id
 
+  if not settings.get_player_settings(game.get_player(playerdata.player_index))["show-agri-range-overlap-indication"].value then
+    return
+  end
+
   -- only check overlaps for the newly added tower against already visible towers
   for other_unit, other_entry in pairs(playerdata.rendered_towers) do
     if other_unit ~= tower.unit_number then
@@ -182,15 +258,42 @@ local function render_tower(tower, surface, playerdata)
       if not playerdata.overlap_renders[key] then
         local overlap_area = get_intersection_area(area, {left_top = other_entry.left_top.position, right_bottom = other_entry.right_bottom.position})
         if overlap_area then
-          local overlap_id = rendering.draw_rectangle{
-            left_top = overlap_area.left_top,
-            right_bottom = overlap_area.right_bottom,
-            surface = surface,
-            players = {playerdata.player_index},
-            color = {1, 0.3, 0.2, 0.15},
-            filled = true
-          }
-          playerdata.overlap_renders[key] = overlap_id
+          -- Collect intersecting existing overlap rectangles
+          local intersecting_rects = {}
+          for _, overlap_ids in pairs(playerdata.overlap_renders) do
+            for _, overlap_id in ipairs(overlap_ids) do
+              local existing_render = rendering.get_object_by_id(overlap_id.id)
+              if existing_render and existing_render.valid then
+                local existing_rect = {
+                  left_top = {x = existing_render.left_top.position.x, y = existing_render.left_top.position.y},
+                  right_bottom = {x = existing_render.right_bottom.position.x, y = existing_render.right_bottom.position.y}
+                }
+                if get_intersection_area(overlap_area, existing_rect) then
+                  table.insert(intersecting_rects, existing_rect)
+                end
+              end
+            end
+          end
+
+          -- Subtract the intersecting rectangles from the overlap_area
+          local parts = subtract_rectangles(overlap_area, intersecting_rects)
+
+          -- Render each part
+          for _, part in ipairs(parts) do
+            local overlap_id = rendering.draw_rectangle{
+              left_top = part.left_top,
+              right_bottom = part.right_bottom,
+              surface = surface,
+              players = {playerdata.player_index},
+              color = {1, 0.3, 0.2, 0.10},
+              filled = true
+            }
+            -- Store the id
+            if not playerdata.overlap_renders[key] then
+              playerdata.overlap_renders[key] = {}
+            end
+            table.insert(playerdata.overlap_renders[key], overlap_id)
+          end
         end
       end
     end
@@ -205,10 +308,12 @@ local function destroy_tower_render(unit_number, playerdata)
     playerdata.rendered_towers[unit_number] = nil
   end
 
-  for key, overlap_id in pairs(playerdata.overlap_renders) do
+  for key, overlap_ids in pairs(playerdata.overlap_renders) do
     local a, b = key:match("^(%d+)_(%d+)$")
     if a == tostring(unit_number) or b == tostring(unit_number) then
-      overlap_id.destroy()
+      for _, id in ipairs(overlap_ids) do
+        id.destroy()
+      end
       playerdata.overlap_renders[key] = nil
     end
   end
@@ -301,11 +406,13 @@ function Handler.on_tower_built(event)
   end
 end
 
+-- When player moves
 script.on_event({
   defines.events.on_player_changed_position,
   defines.events.on_player_changed_surface
 }, Handler.tick_player)
 
+-- When player mines
 script.on_event({
  --defines.events.on_pre_player_mined_item,
   defines.events.on_player_mined_entity,
@@ -314,6 +421,7 @@ script.on_event({
   defines.events.on_marked_for_deconstruction
 }, Handler.on_tower_removed)
 
+-- When player builds
 script.on_event({
   defines.events.on_built_entity
 }, Handler.on_tower_built)
