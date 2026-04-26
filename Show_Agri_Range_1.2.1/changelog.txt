@@ -4,7 +4,7 @@ Date: 2024-04-26
   Features:
     - Added a setting to enable and disable overlapping areas defaults to false
   Bugfixes:
-    - Fixed overlaping arreays of multiople towers getting drawn over each other 
+    - Fixed overlapping areas of multiple towers getting drawn over each other 
     - Fixed tragic spelling and grammar mistakes
     - KNOWN BUG: when marking a tower for deconstruct while moving the mouse the render will not get destroyed because the unit_number gets removed before
   Info:
