@@ -3,7 +3,7 @@
   "title": "Agriculturetowers show their range",
   "description": "A mod that displays the agriculture tower range of other towers when placing a new tower!",
 
-  "version": "1.2.1",
+  "version": "1.2.2",
   "author": "MoltenOre",
   "factorio_version": "2.0",
 
@@ -16,7 +16,7 @@
   "expansion_shaders_required": false,
 
   "dependencies": [
-        "base",
+        "base >= 2.0.0",
         "space-age",
         "flib"
     ]

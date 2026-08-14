@@ -1,6 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.2.2
+Date: 2026-08-14
+  Bugfixes:
+    - Changed the Version so it is upwards compatible starting 2.0
+  Info:
+    - TODO show plantable ground/Artificial soil
+---------------------------------------------------------------------------------------------------
 Version: 1.2.1
-Date: 2024-04-26
+Date: 2026-04-26
   Features:
     - Added a setting to enable and disable overlapping areas defaults to false
   Bugfixes:
@@ -11,7 +18,7 @@ Date: 2024-04-26
     - TODO show plantable ground/Artificial soil
 ---------------------------------------------------------------------------------------------------
 Version: 1.2.0
-Date: 2024-04-24
+Date: 2026-04-24
   Optimizations:
     - Minore runtime optimasation
   Features:
@@ -23,7 +30,7 @@ Date: 2024-04-24
     - OUT OF SCOPE TODO Make towers draggable like power poles
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.0
-Date: 2024-04-21
+Date: 2026-04-21
   Features:
     - Ghost Tower show range
     - Tower Range disappears when tower is deconstructed
